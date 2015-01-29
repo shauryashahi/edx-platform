@@ -29,7 +29,6 @@ from xmodule.tests import get_test_descriptor_system
 from xmodule.video_module.transcripts_utils import download_youtube_subs, save_to_store
 
 from django.conf import settings
-from django.test.utils import override_settings
 
 SRT_FILEDATA = '''
 0
@@ -52,39 +51,6 @@ Kako ste danas?
 '''
 
 
-TEST_YOU_TUBE_SETTINGS = {
-    # YouTube JavaScript API
-    'API': 'www.youtube.com/iframe_api',
-
-    # URL to test YouTube availability
-    'TEST_URL': 'gdata.youtube.com/feeds/api/videos/',
-
-    # Current youtube api for requesting transcripts.
-    # For example: http://video.google.com/timedtext?lang=en&v=j_jEn79vS3g.
-    'TEXT_API': {
-        'url': 'video.google.com/timedtext',
-        'params': {
-            'lang': 'en',
-            'v': 'set_youtube_id_of_11_symbols_here',
-        },
-    },
-}
-
-TEST_DATA_CONTENTSTORE = {
-    'ENGINE': 'xmodule.contentstore.mongo.MongoContentStore',
-    'DOC_STORE_CONFIG': {
-        'host': 'localhost',
-        'db': 'test_xcontent_%s' % uuid4().hex,
-    },
-    # allow for additional options that can be keyed on a name, e.g. 'trashcan'
-    'ADDITIONAL_OPTIONS': {
-        'trashcan': {
-            'bucket': 'trash_fs'
-        }
-    }
-}
-
-
 def instantiate_descriptor(**field_data):
     """
     Instantiate descriptor with most properties.
@@ -97,6 +63,62 @@ def instantiate_descriptor(**field_data):
         scope_ids=ScopeIds(None, None, usage_key, usage_key),
         field_data=DictFieldData(field_data),
     )
+
+
+def set_up():
+    """
+    Overrides YOUTUBE and CONTENTSTORE settings
+    """
+    youtube_setting = getattr(settings, "YOUTUBE", None)
+    contentstore_setting = getattr(settings, "CONTENTSTORE", None)
+    settings.YOUTUBE = {
+        # YouTube JavaScript API
+        'API': 'www.youtube.com/iframe_api',
+
+        # URL to test YouTube availability
+        'TEST_URL': 'gdata.youtube.com/feeds/api/videos/',
+
+        # Current youtube api for requesting transcripts.
+        # For example: http://video.google.com/timedtext?lang=en&v=j_jEn79vS3g.
+        'TEXT_API': {
+            'url': 'video.google.com/timedtext',
+            'params': {
+                'lang': 'en',
+                'v': 'set_youtube_id_of_11_symbols_here',
+            },
+        },
+    }
+
+    settings.CONTENTSTORE = {
+        'ENGINE': 'xmodule.contentstore.mongo.MongoContentStore',
+        'DOC_STORE_CONFIG': {
+            'host': 'localhost',
+            'db': 'test_xcontent_%s' % uuid4().hex,
+        },
+        # allow for additional options that can be keyed on a name, e.g. 'trashcan'
+        'ADDITIONAL_OPTIONS': {
+            'trashcan': {
+                'bucket': 'trash_fs'
+            }
+        }
+    }
+
+    return youtube_setting, contentstore_setting
+
+
+def tear_down(youtube_setting, contentstore_setting):
+    """
+    Returns YOUTUBE and CONTENTSTORE settings to a default value
+    """
+    if youtube_setting:
+        settings.YOUTUBE = youtube_setting
+    else:
+        del settings.YOUTUBE
+
+    if contentstore_setting:
+        settings.CONTENTSTORE = contentstore_setting
+    else:
+        del settings.CONTENTSTORE
 
 
 class VideoModuleTest(LogicTest):
@@ -130,7 +152,6 @@ class VideoModuleTest(LogicTest):
 
     def test_parse_youtube_invalid(self):
         """Ensure that ids that are invalid return an empty dict"""
-
         # invalid id
         youtube_str = 'thisisaninvalidid'
         output = VideoDescriptor._parse_youtube(youtube_str)
@@ -183,7 +204,6 @@ class VideoDescriptorTestBase(unittest.TestCase):
     """
     Base class for tests for VideoDescriptor
     """
-
     def setUp(self):
         self.descriptor = instantiate_descriptor()
 
@@ -645,14 +665,12 @@ class VideoCdnTest(unittest.TestCase):
         self.assertIsNone(get_video_from_cdn(fake_cdn_url, original_video_url))
 
 
-@override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
-@override_settings(YOUTUBE=TEST_YOU_TUBE_SETTINGS)
 class VideoDescriptorIndexingTestCase(unittest.TestCase):
     """
     Make sure that VideoDescriptor can format data for indexing as expected.
     """
-
     def test_index_dictionary(self):
+        set_up()
         xml_data = '''
             <video display_name="Test Video"
                    youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
@@ -694,26 +712,26 @@ class VideoDescriptorIndexingTestCase(unittest.TestCase):
                 "display_name": "Test Video",
                 "transcript_en": (
                     "LILA FISHER: Hi, welcome to Edx. I'm Lila Fisher, an Edx fellow helping to put together these"
-                    "courses. As you know, our courses are entirely online. So before we start learning about the"
-                    "subjects that brought you here, let's learn about the tools that you will use to navigate through"
-                    "the course material. Let's start with what is on your screen right now. You are watching a video"
-                    "of me talking. You have several tools associated with these videos. Some of them are standard"
+                    " courses. As you know, our courses are entirely online. So before we start learning about the"
+                    " subjects that brought you here, let's learn about the tools that you will use to navigate through"
+                    " the course material. Let's start with what is on your screen right now. You are watching a video"
+                    " of me talking. You have several tools associated with these videos. Some of them are standard "
                     "video buttons, like the play Pause Button on the bottom left. Like most video players, you can see"
-                    "how far you are into this particular video segment and how long the entire video segment is."
-                    "Something that you might not be used to is the speed option. While you are going through the"
-                    "videos, you can speed up or slow down the video player with these buttons. Go ahead and try that"
-                    "now. Make me talk faster and slower. If you ever get frustrated by the pace of speech, you can"
-                    "adjust it this way. Another great feature is the transcript on the side. This will follow along"
-                    "with everything that I am saying as I am saying it, so you can read along if you like. You can"
-                    "also click on any of the words, and you will notice that the video jumps to that word. The video"
-                    "slider at the bottom of the video will let you navigate through the video quickly. If you ever"
-                    "find the transcript distracting, you can toggle the captioning button in order to make it go away"
+                    " how far you are into this particular video segment and how long the entire video segment is."
+                    " Something that you might not be used to is the speed option. While you are going through the"
+                    " videos, you can speed up or slow down the video player with these buttons. Go ahead and try that"
+                    " now. Make me talk faster and slower. If you ever get frustrated by the pace of speech, you can"
+                    " adjust it this way. Another great feature is the transcript on the side. This will follow along"
+                    " with everything that I am saying as I am saying it, so you can read along if you like. You can"
+                    " also click on any of the words, and you will notice that the video jumps to that word. The video"
+                    " slider at the bottom of the video will let you navigate through the video quickly. If you ever "
+                    "find the transcript distracting, you can toggle the captioning button in order to make it go away "
                     "or reappear. Now that you know about the video player, I want to point out the sequence navigator."
-                    "Right now you're in a lecture sequence, which interweaves many videos and practice exercises. You"
-                    "can see how far you are in a particular sequence by observing which tab you're on. You can"
-                    "navigate directly to any video or exercise by clicking on the appropriate tab. You can also"
-                    "progress to the next element by pressing the Arrow button, or by clicking on the next tab. Try"
-                    "that now. The tutorial will continue in the next video."
+                    " Right now you're in a lecture sequence, which interweaves many videos and practice exercises. You"
+                    " can see how far you are in a particular sequence by observing which tab you're on. You can"
+                    " navigate directly to any video or exercise by clicking on the appropriate tab. You can also"
+                    " progress to the next element by pressing the Arrow button, or by clicking on the next tab. Try"
+                    " that now. The tutorial will continue in the next video."
                 )
             },
             "content_type": "Video"
@@ -742,26 +760,26 @@ class VideoDescriptorIndexingTestCase(unittest.TestCase):
                 "display_name": "Test Video",
                 "transcript_en": (
                     "LILA FISHER: Hi, welcome to Edx. I'm Lila Fisher, an Edx fellow helping to put together these"
-                    "courses. As you know, our courses are entirely online. So before we start learning about the"
-                    "subjects that brought you here, let's learn about the tools that you will use to navigate through"
-                    "the course material. Let's start with what is on your screen right now. You are watching a video"
-                    "of me talking. You have several tools associated with these videos. Some of them are standard"
+                    " courses. As you know, our courses are entirely online. So before we start learning about the"
+                    " subjects that brought you here, let's learn about the tools that you will use to navigate through"
+                    " the course material. Let's start with what is on your screen right now. You are watching a video"
+                    " of me talking. You have several tools associated with these videos. Some of them are standard "
                     "video buttons, like the play Pause Button on the bottom left. Like most video players, you can see"
-                    "how far you are into this particular video segment and how long the entire video segment is."
-                    "Something that you might not be used to is the speed option. While you are going through the"
-                    "videos, you can speed up or slow down the video player with these buttons. Go ahead and try that"
-                    "now. Make me talk faster and slower. If you ever get frustrated by the pace of speech, you can"
-                    "adjust it this way. Another great feature is the transcript on the side. This will follow along"
-                    "with everything that I am saying as I am saying it, so you can read along if you like. You can"
-                    "also click on any of the words, and you will notice that the video jumps to that word. The video"
-                    "slider at the bottom of the video will let you navigate through the video quickly. If you ever"
-                    "find the transcript distracting, you can toggle the captioning button in order to make it go away"
+                    " how far you are into this particular video segment and how long the entire video segment is."
+                    " Something that you might not be used to is the speed option. While you are going through the"
+                    " videos, you can speed up or slow down the video player with these buttons. Go ahead and try that"
+                    " now. Make me talk faster and slower. If you ever get frustrated by the pace of speech, you can"
+                    " adjust it this way. Another great feature is the transcript on the side. This will follow along"
+                    " with everything that I am saying as I am saying it, so you can read along if you like. You can"
+                    " also click on any of the words, and you will notice that the video jumps to that word. The video"
+                    " slider at the bottom of the video will let you navigate through the video quickly. If you ever "
+                    "find the transcript distracting, you can toggle the captioning button in order to make it go away "
                     "or reappear. Now that you know about the video player, I want to point out the sequence navigator."
-                    "Right now you're in a lecture sequence, which interweaves many videos and practice exercises. You"
-                    "can see how far you are in a particular sequence by observing which tab you're on. You can"
-                    "navigate directly to any video or exercise by clicking on the appropriate tab. You can also"
-                    "progress to the next element by pressing the Arrow button, or by clicking on the next tab. Try"
-                    "that now. The tutorial will continue in the next video."
+                    " Right now you're in a lecture sequence, which interweaves many videos and practice exercises. You"
+                    " can see how far you are in a particular sequence by observing which tab you're on. You can"
+                    " navigate directly to any video or exercise by clicking on the appropriate tab. You can also"
+                    " progress to the next element by pressing the Arrow button, or by clicking on the next tab. Try"
+                    " that now. The tutorial will continue in the next video."
                 ),
                 "transcript_ge": "sprechen sie deutsch? Ja, ich spreche Deutsch"
             },

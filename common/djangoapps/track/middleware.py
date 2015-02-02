@@ -18,7 +18,11 @@ META_KEY_TO_CONTEXT_KEY = {
     'REMOTE_ADDR': 'ip',
     'SERVER_NAME': 'host',
     'HTTP_USER_AGENT': 'agent',
-    'PATH_INFO': 'path'
+    'PATH_INFO': 'path',
+    # Not a typo. See:
+    # http://en.wikipedia.org/wiki/HTTP_referer#Origin_of_the_term_referer
+    'HTTP_REFERER': 'referer',
+    'HTTP_ACCEPT_LANGUAGE': 'accept_language',
 }
 
 
@@ -139,6 +143,11 @@ class TrackMiddleware(object):
         # django.contrib.sessions.backends.base._hash() but use MD5
         # instead of SHA1 so that the result has the same length (32)
         # as the original session_key.
+
+        # TODO: Switch to SHA224, which is secure.
+        # If necessary, drop the last little bit of the hash to make it the same length.
+        # Using a known-insecure hash to shorten is silly.
+        # Also, why do we need same length?
         key_salt = "common.djangoapps.track" + self.__class__.__name__
         key = hashlib.md5(key_salt + settings.SECRET_KEY).digest()
         encrypted_session_key = hmac.new(key, msg=session_key, digestmod=hashlib.md5).hexdigest()

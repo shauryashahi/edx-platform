@@ -189,6 +189,8 @@ class SegmentIOTrackingTestCase(EventTrackingTestCase):
             self.assertEquals(response.status_code, 200)
 
             expected_event = {
+                'accept_language': '',
+                'referer': '',
                 'username': str(sentinel.username),
                 'ip': '',
                 'session': '',
@@ -352,6 +354,8 @@ class SegmentIOTrackingTestCase(EventTrackingTestCase):
             self.assertEquals(response.status_code, 200)
 
             expected_event_without_payload = {
+                'accept_language': '',
+                'referer': '',
                 'username': str(sentinel.username),
                 'ip': '',
                 'session': '',

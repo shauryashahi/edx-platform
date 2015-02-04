@@ -41,8 +41,6 @@ class TestTrackViews(TestCase):
             views.user_track(request)
 
         expected_event = {
-            'referer': '',
-            'accept_language': '',
             'username': 'anonymous',
             'session': sentinel.session,
             'ip': '127.0.0.1',
@@ -67,8 +65,6 @@ class TestTrackViews(TestCase):
             views.user_track(request)
 
         expected_event = {
-            'referer': '',
-            'accept_language': '',
             'username': 'anonymous',
             'session': sentinel.session,
             'ip': '127.0.0.1',
@@ -99,8 +95,6 @@ class TestTrackViews(TestCase):
             views.user_track(request)
 
             expected_event = {
-                'accept_language': '',
-                'referer': '',
                 'username': 'anonymous',
                 'session': '',
                 'ip': '127.0.0.1',

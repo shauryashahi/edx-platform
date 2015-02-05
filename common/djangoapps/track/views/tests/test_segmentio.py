@@ -53,7 +53,7 @@ class SegmentIOTrackingTestCase(EventTrackingTestCase):
 
     def setUp(self):
         super(SegmentIOTrackingTestCase, self).setUp()
-        self.maxDiff = None
+        self.maxDiff = None  #pylint: disable=invalid-name
         self.request_factory = RequestFactory()
 
     def test_get_request(self):

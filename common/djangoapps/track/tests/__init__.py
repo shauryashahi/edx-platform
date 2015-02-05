@@ -84,6 +84,6 @@ class EventTrackingTestCase(TestCase):
         """Ensure at least one event has been emitted at this point in the test."""
         self.assertGreaterEqual(len(self.backend.events), 1)
 
-    def assertEqualUnicode(self, a, b):
+    def assertEqualUnicode(self, tree_a, tree_b):
         """Like assertEqual, but give nicer errors for unicode vs. non-unicode"""
-        self.assertEqual(unicode_flatten(a), unicode_flatten(b))
+        self.assertEqual(unicode_flatten(tree_a), unicode_flatten(tree_b))

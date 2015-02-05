@@ -1,8 +1,17 @@
-import hmac
+"""
+This is a middleware layer which keeps a log of all requests made
+to the server. It is responsible for removing security tokens and
+similar from such events, and relaying them to the event tracking
+framework.
+"""
+
+
 import hashlib
+import hmac
 import json
-import re
 import logging
+import re
+import sys
 
 from django.conf import settings
 
@@ -74,7 +83,12 @@ class TrackMiddleware(object):
 
             views.server_track(request, request.META['PATH_INFO'], event)
         except:
-            pass
+            ## Why do we have the overly broad except?
+            ##
+            ## Adding instrumentation. If we're dropping events on the floor,
+            ## we should know about it.
+            event = {'event-type':'exception', 'exception': sys.exc_info()[0]}
+            views.server_track(request, request.META['PATH_INFO'], event)
 
     def should_process_request(self, request):
         """Don't track requests to the specified URL patterns"""

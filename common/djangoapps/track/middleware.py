@@ -87,7 +87,7 @@ class TrackMiddleware(object):
             ##
             ## Adding instrumentation. If we're dropping events on the floor,
             ## we should know about it.
-            event = {'event-type':'exception', 'exception': sys.exc_info()[0]}
+            event = {'event-type': 'exception', 'exception': sys.exc_info()[0]}
             views.server_track(request, request.META['PATH_INFO'], event)
 
     def should_process_request(self, request):
